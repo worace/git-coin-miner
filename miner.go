@@ -41,31 +41,41 @@ func fetchTarget() []byte {
 	return target
 }
 
-func submitMessage(message string) (resp *http.Response, err error) {
-	return http.PostForm(gcUrl("/hash"), url.Values{"owner": {"worace"}, "message": {message}})
+func submitMessage(message string) {
+	resp, err := http.PostForm(gcUrl("/hash"), url.Values{"owner": {"worace"}, "message": {message}})
+	if err != nil {
+		panic("failed to submit guess")
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic("error reading response body")
+	}
+	fmt.Println(string(body))
 }
 
 func main() {
+	iterations := 1
 	currentTarget := fetchTarget()
 	targetBytes, _ := hex.DecodeString(string(currentTarget))
+	reloadTarget := func() {
+		currentTarget = fetchTarget()
+		targetBytes, _ = hex.DecodeString(string(currentTarget))
+		iterations = 1
+	}
 	for {
+		iterations++
 		message := generateMessage()
 		hashAttempt := digest(message)
+		if iterations > 1000000 {
+			fmt.Println("completed 1mil attempts; re-checking target")
+			reloadTarget()
+		}
 		if bytes.Compare(hashAttempt, targetBytes) < 0 {
 			fmt.Println("congrats got a hash!")
-			resp, err := submitMessage(message)
-			if err != nil {
-				panic("failed to submit guess")
-			}
-
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				panic("error reading response body")
-			}
-			fmt.Println(string(body))
-			currentTarget = fetchTarget()
-			targetBytes, _ = hex.DecodeString(string(currentTarget))
+			submitMessage(message)
+			reloadTarget()
 		}
 	}
 }
