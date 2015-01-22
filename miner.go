@@ -21,9 +21,6 @@ func generateMessage() string {
 	return fmt.Sprintf("%d", rand.Int())
 }
 
-func submit(message string) {
-}
-
 func digest(input string) []byte {
 	h := sha1.New()
 	h.Write([]byte(input))
@@ -71,7 +68,4 @@ func main() {
 			targetBytes, _ = hex.DecodeString(string(currentTarget))
 		}
 	}
-
 }
-
-//The result will be 0 if a==b, -1 if a < b, and +1 if a > b. A nil argument is equivalent to an empty slice.
