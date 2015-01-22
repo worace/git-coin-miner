@@ -13,7 +13,8 @@ import (
 	"time"
 )
 
-const baseUrl string = "http://git-coin.herokuapp.com"
+//const baseUrl string = "http://git-coin.herokuapp.com"
+const baseUrl string = "http://localhost:9292"
 
 func gcUrl(path string) string {
 	return fmt.Sprintf("%s%s", baseUrl, path)
@@ -21,12 +22,6 @@ func gcUrl(path string) string {
 
 func generateMessage() string {
 	return fmt.Sprintf("%d%v", rand.Int63(), time.Now())
-}
-
-func digest(input string) []byte {
-	h := sha1.New()
-	h.Write([]byte(input))
-	return h.Sum(nil)
 }
 
 func fetchTarget() []byte {
@@ -57,41 +52,60 @@ func submitMessage(message string) {
 	fmt.Println(string(body))
 }
 
-func mine(finished chan bool) {
+func digest(input string) []byte {
+	h := sha1.New()
+	h.Write([]byte(input))
+	return h.Sum(nil)
+}
+
+func mine(finished chan bool, seed int, target Target) {
 	iterations := 1
-	currentTarget := fetchTarget()
-	targetBytes, _ := hex.DecodeString(string(currentTarget))
-	reloadTarget := func() {
-		currentTarget = fetchTarget()
-		targetBytes, _ = hex.DecodeString(string(currentTarget))
-		fmt.Println("target now: ", string(currentTarget))
-		iterations = 1
-	}
+	message := string(seed)
 	for {
 		iterations++
-		message := generateMessage()
 		hashAttempt := digest(message)
 		if iterations > 4000000 {
-			fmt.Println("completed 4mil attempts; re-checking target")
-			reloadTarget()
+			fmt.Println("completed 4mil attempts; re-checking target; current message: ", message)
+			fmt.Printf("digest: ", hex.EncodeToString(hashAttempt))
+			iterations = 1
 		}
-		if bytes.Compare(hashAttempt, targetBytes) < 0 {
+		if bytes.Compare(hashAttempt, target.targetBytes) < 0 {
 			fmt.Println("congrats got a hash!")
 			submitMessage(message)
-			reloadTarget()
 			//finished <- true
 		}
+		message = hex.EncodeToString(hashAttempt)
 	}
+}
+
+func checkTargetPeriodically(target Target) {
+	ticker := time.NewTicker(time.Millisecond * 3000)
+	go func() {
+		for range ticker.C {
+			fmt.Println("fetching target")
+			target.currentTarget = fetchTarget()
+			targetBytes, _ := hex.DecodeString(string(target.currentTarget))
+			target.targetBytes = targetBytes
+			fmt.Println("target now ", target.currentTarget)
+			fmt.Println("target bytes now ", target.targetBytes)
+		}
+	}()
+}
+
+type Target struct {
+	currentTarget []byte
+	targetBytes   []byte
 }
 
 func main() {
 	fmt.Println("NUM CPUS", runtime.NumCPU())
 	finished := make(chan bool)
 
-	fmt.Println()
+	target := Target{currentTarget: fetchTarget()}
+	checkTargetPeriodically(target)
 
 	for i := 0; i < runtime.NumCPU(); i++ {
-		go mine(finished)
+		go mine(finished, i, target)
 	}
 	foundHash := <-finished
 	fmt.Println("Found hash", foundHash)
