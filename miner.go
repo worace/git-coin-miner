@@ -58,8 +58,16 @@ func digest(input string) []byte {
 	return h.Sum(nil)
 }
 
-func mine(finished chan bool, seed int, target Target) {
+func mine(finished chan bool, seed int) {
 	iterations := 1
+	currentTarget := fetchTarget()
+	targetBytes, _ := hex.DecodeString(string(currentTarget))
+	reloadTarget := func() {
+		currentTarget = fetchTarget()
+		targetBytes, _ = hex.DecodeString(string(currentTarget))
+		fmt.Println("target now: ", string(currentTarget))
+		iterations = 1
+	}
 	message := string(seed)
 	for {
 		iterations++
@@ -67,11 +75,13 @@ func mine(finished chan bool, seed int, target Target) {
 		if iterations > 4000000 {
 			fmt.Println("completed 4mil attempts; re-checking target; current message: ", message)
 			fmt.Printf("digest: ", hex.EncodeToString(hashAttempt))
+			reloadTarget()
 			iterations = 1
 		}
-		if bytes.Compare(hashAttempt, target.targetBytes) < 0 {
+		if bytes.Compare(hashAttempt, targetBytes) < 0 {
 			fmt.Println("congrats got a hash!")
 			submitMessage(message)
+			reloadTarget()
 			//finished <- true
 		}
 		message = hex.EncodeToString(hashAttempt)
@@ -101,11 +111,8 @@ func main() {
 	fmt.Println("NUM CPUS", runtime.NumCPU())
 	finished := make(chan bool)
 
-	target := Target{currentTarget: fetchTarget()}
-	checkTargetPeriodically(target)
-
 	for i := 0; i < runtime.NumCPU(); i++ {
-		go mine(finished, i, target)
+		go mine(finished, i)
 	}
 	foundHash := <-finished
 	fmt.Println("Found hash", foundHash)
