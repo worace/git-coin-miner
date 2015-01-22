@@ -13,8 +13,9 @@ import (
 	"time"
 )
 
-//const baseUrl string = "http://git-coin.herokuapp.com"
-const baseUrl string = "http://localhost:9292"
+const baseUrl string = "http://git-coin.herokuapp.com"
+
+//const baseUrl string = "http://localhost:9292"
 
 func gcUrl(path string) string {
 	return fmt.Sprintf("%s%s", baseUrl, path)
@@ -58,7 +59,7 @@ func digest(input string) []byte {
 	return h.Sum(nil)
 }
 
-func mine(finished chan bool, seed int) {
+func mine(finished chan bool) {
 	iterations := 1
 	currentTarget := fetchTarget()
 	targetBytes, _ := hex.DecodeString(string(currentTarget))
@@ -68,7 +69,7 @@ func mine(finished chan bool, seed int) {
 		fmt.Println("target now: ", string(currentTarget))
 		iterations = 1
 	}
-	message := string(seed)
+	message := generateMessage()
 	for {
 		iterations++
 		hashAttempt := digest(message)
@@ -93,7 +94,7 @@ func main() {
 	finished := make(chan bool)
 
 	for i := 0; i < runtime.NumCPU(); i++ {
-		go mine(finished, i)
+		go mine(finished)
 	}
 	foundHash := <-finished
 	fmt.Println("Found hash", foundHash)
