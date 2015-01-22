@@ -88,25 +88,6 @@ func mine(finished chan bool, seed int) {
 	}
 }
 
-func checkTargetPeriodically(target Target) {
-	ticker := time.NewTicker(time.Millisecond * 3000)
-	go func() {
-		for range ticker.C {
-			fmt.Println("fetching target")
-			target.currentTarget = fetchTarget()
-			targetBytes, _ := hex.DecodeString(string(target.currentTarget))
-			target.targetBytes = targetBytes
-			fmt.Println("target now ", target.currentTarget)
-			fmt.Println("target bytes now ", target.targetBytes)
-		}
-	}()
-}
-
-type Target struct {
-	currentTarget []byte
-	targetBytes   []byte
-}
-
 func main() {
 	fmt.Println("NUM CPUS", runtime.NumCPU())
 	finished := make(chan bool)
