@@ -29,7 +29,7 @@ class Miner
 end
 
 def run
-  (1..2).to_a.map do |i|
+  (1..4).to_a.map do |i|
     Thread.new do
       miner = Miner.new
       while true do

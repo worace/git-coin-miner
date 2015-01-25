@@ -70,11 +70,14 @@ func mine(finished chan bool) {
 		iterations = 1
 	}
 	message := generateMessage()
+	start := time.Now()
 	for {
 		iterations++
 		hashAttempt := digest(message)
 		if iterations > 4000000 {
 			fmt.Println("completed 4mil attempts; re-checking target; current message: ", message)
+			fmt.Println("elapsed time: ", time.Now().Sub(start))
+			start = time.Now()
 			fmt.Printf("digest: ", hex.EncodeToString(hashAttempt))
 			reloadTarget()
 			iterations = 1
