@@ -12,6 +12,10 @@ class Miner
     @target ||= Faraday.get("#{BASE_URL}/target").body.hex
   end
 
+  def owner
+    ["Alan Kay", "Tim Berners-Lee", "Fred Brooks", "Donald Knuth", "Ada Lovelace", "Grace Hopper", "James Golick", "Weirich", "Adele Goldberg", "Dennis Ritchie", "Ezra Zygmuntowicz", "Yukihiro Matsumoto"].sample
+  end
+
   def mine
     if iteration > 1_000_000
       puts "completed 1mil hashes; refreshing target"
@@ -20,7 +24,7 @@ class Miner
     end
     input = SecureRandom.hex
     if Digest::SHA1.hexdigest(input).hex < target
-      resp = Faraday.post("#{BASE_URL}/hash", {:owner => "worace", :message => input})
+      resp = Faraday.post("#{BASE_URL}/hash", {:owner => owner, :message => input})
       puts "got a coin #{input}, resp: #{resp.body}"
       @target = nil
     end
