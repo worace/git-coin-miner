@@ -2,7 +2,7 @@ require "faraday"
 require "digest"
 require "securerandom"
 
-BASE_URL = "http://git-coin.herokuapp.com"
+BASE_URL = ENV["COIN_URL"] || "http://git-coin.herokuapp.com"
 
 class Miner
   def iteration

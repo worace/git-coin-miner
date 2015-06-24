@@ -56,8 +56,7 @@ class GroupMiner
 end
 
 
-
-(1..GroupMiner::NUM_PROCS).map do |i|
+4.times.map do |i|
   Thread.new do
     GroupMiner.new.mine(i)
   end
